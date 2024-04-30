@@ -97,6 +97,7 @@ def logout():
     logout_user()
     return redirect(url_for("home"))
 
+
 # method to display info from csv file
 @app.route('/dashboard')
 def dashboard():
