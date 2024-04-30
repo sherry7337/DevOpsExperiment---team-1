@@ -1,32 +1,56 @@
 # Imports
+import sqlite3
 from flask import Flask, render_template, request, url_for, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user
+import pandas as pd
 
 # create the application object
 app = Flask(__name__)
 
-####################################################Initiating the DB####################################################################
+##################### Initiating the Database ########################
 # Tells flask-sqlalchemy what database to connect to
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.db"
 # Enter a secret key
 app.config["SECRET_KEY"] = "ENTER YOUR SECRET KEY"
 # Initialize flask-sqlalchemy extension
 db = SQLAlchemy()
- 
+
+#pd.options.display.max_rows = 10
+#df = pd.read_csv('data.csv')
+
+conn = sqlite3.connect("sqlite3.db")
+cursor = conn.cursor()
+#cursor.execute("CREATE TABLE populationTest(country, year, populationChange)")
+
+with open("data.csv", 'r') as f:
+    df = pd.read_csv('data.csv')
+    #to_db = [(i['TIME'], i['2011'], i['2012']) for i in df]
+
+    for i in df:
+        cursor.execute("INSERT INTO populationTest VALUES (?, ?, ?)", (i['TIME'], "2022", i['2022']))
+
+#cursor.executemany("INSERT INTO populationTest (country, year, populationChange) VALUES (?, ?, ?)", to_db)    
+conn.commit()
+res = cur.execute("SELECT * FROM populationTest")
+res.fetchall()
+conn.close()
+
 # LoginManager is needed for our application to be able to log in and out users
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-# Create user model for DB.
-class Users(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(250), unique=True,
-                         nullable=False)
-    password = db.Column(db.String(250),
-                         nullable=False) 
+# Create User model for test.db Database
+class User(UserMixin, db.Model):
+    WUser_ID = db.Column(db.Integer, primary_key=True)
+    WUserName = db.Column(db.String(40), unique=True, nullable=False)
+    WFirstName = db.Column(db.String(20), nullable=False)
+    WLastName = db.Column(db.String(20), nullable=False)
+    WEmail = db.Column(db.String(20), unique=True, nullable=False)
+    WPassword = db.Column(db.String(60), nullable=False)
+    
     def __repr__(self):
-        return f"User('{self.username}', {self.email})"
+        return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
  
 # Initialize app with extension
 db.init_app(app)
@@ -35,7 +59,6 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-    
 # Creates a user loader callback that returns the user object given an id
 @login_manager.user_loader
 def loader_user(user_id):
