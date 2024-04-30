@@ -25,6 +25,8 @@ class Users(UserMixin, db.Model):
                          nullable=False)
     password = db.Column(db.String(250),
                          nullable=False) 
+    def __repr__(self):
+        return f"User('{self.username}', {self.email})"
  
 # Initialize app with extension
 db.init_app(app)
