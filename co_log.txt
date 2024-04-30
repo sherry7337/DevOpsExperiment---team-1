@@ -2,3 +2,4 @@ session 1 start 19:25 29/04/2024
 session 1 end 21:19 29/04/2024
 
 Session 2 start 19:05 30/04/2024
+Session 2 start 21:00 30/04/2024

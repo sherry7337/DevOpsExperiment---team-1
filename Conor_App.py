@@ -1,5 +1,5 @@
 # Imports
-from flask import Flask, render_template, request, url_for, redirect
+from flask import Flask, render_template, request, url_for, redirect, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user
 
@@ -43,22 +43,29 @@ def loader_user(user_id):
 
 #####################################################Decorators and Routes###############################################################
 
+@app.route("/API/Bulk")
+def api_bulk():
+    data = dbbulk()
+    response = make_response({"data":data}, 200)
+    return response
+
+@app.route("/API/query")
+def api_query():
+    data = dbquery(request.args.get('country'))
+    response = make_response({"data":data}, 200)
+    return response
+
 # Decorators are the names of URLS.
-@app.route("/home")
+@app.route("/home", methods=["GET", "POST"])
 def home():
     # Render home.html on "/home" route
     return render_template("home.html")
 
     #a second route to home without the need for a URL extension
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def home2():
     # Render home.html on "/" route
     return render_template("home.html")
-
-#A welcome page where users can login and/or register
-@app.route('/welcome')
-def welcome():
-    return render_template('welcome.html') 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
