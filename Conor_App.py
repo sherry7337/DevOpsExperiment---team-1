@@ -1,4 +1,5 @@
 # Imports
+import os
 import sqlite3
 from flask import Flask, render_template, request, url_for, redirect, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -23,32 +24,32 @@ db = SQLAlchemy()
 conn = sqlite3.connect("sqlite3.db")
 cursor = conn.cursor()
 #cursor.execute("CREATE TABLE populationTest(country, year, populationChange)")
-
+print(os.getcwd())
 with open("data.csv", 'r') as f:
     df = pd.read_csv('data.csv')
     #to_db = [(i['TIME'], i['2011'], i['2012']) for i in df]
 
-    for i in df:
-        cursor.execute("INSERT INTO populationTest VALUES (?, ?, ?)", (i['TIME'], "2022", i['2022']))
+    #for i in df:
+        #cursor.execute("INSERT INTO populationTest VALUES (?, ?, ?)", (i['TIME'], "2022", i['2022']))
 
 #cursor.executemany("INSERT INTO populationTest (country, year, populationChange) VALUES (?, ?, ?)", to_db)    
-conn.commit()
-res = cur.execute("SELECT * FROM populationTest")
-res.fetchall()
-conn.close()
+#conn.commit()
+#res = cur.execute("SELECT * FROM populationTest")
+# res.fetchall()
+# conn.close()
 
 # LoginManager is needed for our application to be able to log in and out users
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 # Create User model for test.db Database
-class User(UserMixin, db.Model):
-    WUser_ID = db.Column(db.Integer, primary_key=True)
-    WUserName = db.Column(db.String(40), unique=True, nullable=False)
-    WFirstName = db.Column(db.String(20), nullable=False)
-    WLastName = db.Column(db.String(20), nullable=False)
-    WEmail = db.Column(db.String(20), unique=True, nullable=False)
-    WPassword = db.Column(db.String(60), nullable=False)
+class Users(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    userName = db.Column(db.String(40), unique=True, nullable=False)
+    #WFirstName = db.Column(db.String(20), nullable=False)
+    #WLastName = db.Column(db.String(20), nullable=False)
+    #WEmail = db.Column(db.String(20), unique=True, nullable=False)
+    password = db.Column(db.String(60), nullable=False)
     
     def __repr__(self):
         return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
@@ -66,6 +67,22 @@ def loader_user(user_id):
     return Users.query.get(user_id)
 
 #####################################################Decorators and Routes###############################################################
+@app.route("/API/Login", methods=["GET", "POST"])
+def api_login(WUserName, WPassword):
+   usernameargs = request.args.get(WUserName)
+   passwordargs = request.args.get(WPassword)
+   print(usernameargs)
+   print(passwordargs)
+
+   dbpassword = dbquery("SELECT Password, FROM Users where username="+usernameargs+";")
+   if passwordargs == dbpassword: 
+       response = make_response({"data":dbpassword}, 200)
+       print("good job")
+       return response
+   else:
+       response = make_response({"data":"no"}, 400)
+       print("go away")
+       return response
 
 @app.route("/API/Bulk")
 def api_bulk():
@@ -101,7 +118,7 @@ def login():
         if user.password == request.form.get("password"):
             # Use the login_user method to log in the user
             login_user(user)
-            return redirect(url_for("home"))
+            return redirect(url_for("/API/Login"))
         # Redirect the user back to the home or "/"
     return render_template("login.html")
 
@@ -117,7 +134,7 @@ def register():
         # Commit the changes made to the DB
         db.session.commit()
         # Once user account is created, redirect them to the login page.
-        return redirect(url_for("login"))
+        return redirect(url_for("/home"))
     # Renders sign_up template if user made a GET request
     return render_template("sign_up.html")
 
