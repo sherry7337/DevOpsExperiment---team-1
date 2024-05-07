@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Dashboard</title>
     <!-- Bootstrap CSS-->
@@ -17,9 +17,27 @@
 
     <main class="py-4">
         <div class="container">
-            <div id="data-container" class="bg-light p-4 rounded shadow">
-                <!-- Placeholder for API data -->
-                <p>Loading data...</p>
+            <div id="data-table-container" class="bg-light p-4 rounded shadow">
+                <h1>Data Table</h1>
+                <!-- Table pulls data from 'data.csv' and dumps into table -->
+                <table id="data-table" class="table table-striped">
+                    <thead>
+                        <tr>
+                            {% for header in data[0] %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data[1:] %}
+                        <tr>
+                            {% for cell in row %}
+                            <td>{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
