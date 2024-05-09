@@ -156,6 +156,20 @@ def dashboard():
 
         return render_template('dashboard.html', data=data)
 
+# method to access data.csv using json
+
+#data for graph is being pulled from data.csv
+#allows for the data to be used in a json format
+@app.route('/data')
+def get_data():
+    data = []
+    with open('data.csv', 'r') as file:
+        csv_reader = csv.DictReader(file)
+        for row in csv_reader:
+            data.append(row)
+
+    return jsonify(data)
+
 #######################################################Start the server##############################################################
 # start the server with the 'run()' method
 if __name__ == '__main__':
