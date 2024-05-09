@@ -19,6 +19,11 @@ connection = sqlite3.connect('demo.db')
 df.to_sql('population', connection, if_exists='replace')
 cursor = connection.cursor()
 
+df = pd.read_csv('GDPData.csv')
+df.columns = df.columns.str.strip()
+connection = sqlite3.connect('demo.db')
+df.to_sql('GDP', connection, if_exists='replace')
+cursor = connection.cursor()
 
 ## Database 
 sql_query = """SELECT * FROM population"""
@@ -42,19 +47,19 @@ login_manager.init_app(app)
 
 
 # Create User model for test.db Database
-class Users(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    userName = db.Column(db.String(40), unique=True, nullable=False)
+#class Users(UserMixin, db.Model):
+ #   id = db.Column(db.Integer, primary_key=True)
+  #  userName = db.Column(db.String(40), unique=True, nullable=False)
     #WFirstName = db.Column(db.String(20), nullable=False)
     #WLastName = db.Column(db.String(20), nullable=False)
     #WEmail = db.Column(db.String(20), unique=True, nullable=False)
-    password = db.Column(db.String(60), nullable=False)
+   # password = db.Column(db.String(60), nullable=False)
     
-    def __repr__(self):
-        return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
+   # def __repr__(self):
+    #    return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
  
 # Initialize app with extension
-db.init_app(app)
+#db.init_app(app)
 # Create database within app context
 
  
@@ -143,30 +148,70 @@ def logout():
 
 
 # method to display info from csv file
+#@app.route('/dashboard', methods=["GET", "POST"])
+#def dashboard():
+#    data = []
+#    with open('data.csv', 'r') as file:
+#        csv_reader = csv.reader(file)
+#        for row in csv_reader:
+#            data.append(row)
+
+#        return render_template('dashboard.html', data=data)
+    
+# method to display info from database
 @app.route('/dashboard', methods=["GET", "POST"])
 def dashboard():
-    data = []
-    with open('data.csv', 'r') as file:
-        csv_reader = csv.reader(file)
-        for row in csv_reader:
-            data.append(row)
+    #connection to DB
+    conn = sqlite3.connect('demo.db')
+    cursor = conn.cursor()
 
-        return render_template('dashboard.html', data=data)
+    # pull data from population table
+    cursor.execute("SELECT * FROM population")
+    population_column_names = [description[0] for description in cursor.description]
+    population_data = [dict(zip(population_column_names[1:], row[1:])) for row in cursor.fetchall()]
 
+     # Pull data from GDP table
+    cursor.execute("SELECT * FROM GDP")
+    gdp_column_names = [description[0] for description in cursor.description]
+    gdp_data = [dict(zip(gdp_column_names[1:], row[1:])) for row in cursor.fetchall()]
+
+    # close DB connection
+    conn.close()
+
+    #return render_template('dashboard.html', data=data)
+    return render_template('dashboard.html', data=population_data, gdp_data=gdp_data)
+
+@app.route('/data')
+def get_data():
+    # Connect to the SQLite database
+    conn = sqlite3.connect('demo.db')
+    cursor = conn.cursor()
+
+    # Execute a query to fetch data
+    cursor.execute("SELECT * FROM population")
+
+    # Fetch all data excluding index col
+    column_names = [description[0] for description in cursor.description]
+    data = [dict(zip(column_names[1:], row[1:])) for row in cursor.fetchall()]
+
+    # Close the connection
+    conn.close()
+
+    return jsonify(data)
 
 # method to access data.csv using json
 
 #data for graph is being pulled from data.csv
 #allows for the data to be used in a json format
-@app.route('/data')
-def get_data():
-    data = []
-    with open('data.csv', 'r') as file:
-        csv_reader = csv.DictReader(file)
-        for row in csv_reader:
-            data.append(row)
+# @app.route('/data')
+# def get_data():
+#     data = []
+#     with open('data.csv', 'r') as file:
+#         csv_reader = csv.DictReader(file)
+#         for row in csv_reader:
+#             data.append(row)
 
-    return jsonify(data)
+#     return jsonify(data)
 
 
 #######################################################Start the server##############################################################

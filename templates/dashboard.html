@@ -18,12 +18,22 @@
 
     <main class="py-4">
         <div class="container">
+            <h1>Population Data</h1>
             <div id="graph-container">
                 <!-- Line graph displayed here from script below-->
             </div>
-            <div id="data-table-container" class="bg-light p-4 rounded shadow">
+            
+            <h1>GDP Data</h1>
+            <div id="gdp-chart-container">
+                <!-- Bar chart displayed here from script below-->
+            </div>
+
+            <!-- Removed below table as it was being used as a placeholder to show that data could be reteived and displayed from a csv file until the database was setup
+                this is no longer required as per the spec document 
+                
+                <div id="data-table-container" class="bg-light p-4 rounded shadow">
                 <h1>Data Table</h1>
-                <!-- Table pulls data from 'data.csv' and dumps into table -->
+                Table pulls data from 'data.csv' and dumps into table
                 <table id="data-table" class="table table-striped">
                     <thead>
                         <tr>
@@ -42,7 +52,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
+            </div> -->
         </div>
       </div>
     </main>
@@ -58,7 +68,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
+   
+    <!-- script to display population data in line graph-->
+   <script>
         $(document).ready(function() {
             $.getJSON('/data', function(data) {
                 // Extract x and y data from JSON
@@ -94,6 +106,54 @@
                 Plotly.newPlot('graph-container', traces, layout);
             });
         });
+    </script>
+
+    <!-- script to display gdp data in bar chart -->
+    <script>
+        // Extract GDP data from Flask template variable
+        var gdp_data = JSON.parse('{{ gdp_data | tojson | safe }}');
+        
+        // Extract country names and GDP values for plotting
+        
+        var countries = [];
+        var gdpValues = [];
+
+        for (var i = 0; i < gdp_data.length; i++) {
+            var row = gdp_data[i];
+            var country = row["TIME"]; // Assuming the country names are stored in the "TIME" column
+            var gdpValuesForCountry = [];
+
+            for (var key in row) {
+                if (key !== "TIME") { // Exclude the "TIME" column
+                    gdpValuesForCountry.push(row[key]);
+                }
+            }
+
+            countries.push(country);
+            gdpValues.push(gdpValuesForCountry);
+        }
+
+        // Define traces for GDP bar chart
+        var gdpTraces = [];
+
+        for (var i = 0; i < gdpValues.length; i++) {
+            var trace = {
+                x: countries,
+                y: gdpValues[i],
+                type: 'bar',
+                name: countries[i] // Use the country name as the trace name
+            };
+            gdpTraces.push(trace);
+        }
+
+        // Layout for the GDP bar chart
+        var layout = {
+            title: 'GDP Data',
+            barmode: 'group'
+        };
+
+        // Plot GDP bar chart
+        Plotly.newPlot('gdp-chart-container', gdpTraces, layout);
     </script>
 
 </body>
