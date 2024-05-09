@@ -11,36 +11,35 @@ import csv
 app = Flask(__name__)
 
 ##################### Initiating the Database ########################
-# Tells flask-sqlalchemy what database to connect to
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.db"
-# Enter a secret key
-app.config["SECRET_KEY"] = "ENTER YOUR SECRET KEY"
-# Initialize flask-sqlalchemy extension
-db = SQLAlchemy()
+##Create Database from reading in the CSV file that we pulled from dataset one
 
-#pd.options.display.max_rows = 10
-#df = pd.read_csv('data.csv')
+df = pd.read_csv('data.csv')
+df.columns = df.columns.str.strip()
+connection = sqlite3.connect('demo.db')
+df.to_sql('population', connection, if_exists='replace')
+cursor = connection.cursor()
 
-conn = sqlite3.connect("sqlite3.db")
-cursor = conn.cursor()
-#cursor.execute("CREATE TABLE populationTest(country, year, populationChange)")
-print(os.getcwd())
-with open("data.csv", 'r') as f:
-    df = pd.read_csv('data.csv')
-    #to_db = [(i['TIME'], i['2011'], i['2012']) for i in df]
 
-    #for i in df:
-        #cursor.execute("INSERT INTO populationTest VALUES (?, ?, ?)", (i['TIME'], "2022", i['2022']))
+## Database 
+sql_query = """SELECT * FROM population"""
+cursor.execute(sql_query)
+# Creating list from data in the DB
+dataTest = [cursor.fetchall()]
+#Printing list DataTest
+print(dataTest)
 
-#cursor.executemany("INSERT INTO populationTest (country, year, populationChange) VALUES (?, ?, ?)", to_db)    
-#conn.commit()
-#res = cur.execute("SELECT * FROM populationTest")
-# res.fetchall()
-# conn.close()
+##Attempting to ALTER the table to add a Meta Data column
+# sql_alter = """ALTER TABLE population ADD COLUMN Meta_data char(255)"""
+# cursor.execute(sql_alter)
+
+# dataTest = [cursor.fetchall()]
+# print(dataTest)
+
 
 # LoginManager is needed for our application to be able to log in and out users
 login_manager = LoginManager()
 login_manager.init_app(app)
+
 
 # Create User model for test.db Database
 class Users(UserMixin, db.Model):
@@ -57,10 +56,8 @@ class Users(UserMixin, db.Model):
 # Initialize app with extension
 db.init_app(app)
 # Create database within app context
- 
-with app.app_context():
-    db.create_all()
 
+ 
 # Creates a user loader callback that returns the user object given an id
 @login_manager.user_loader
 def loader_user(user_id):
@@ -146,7 +143,7 @@ def logout():
 
 
 # method to display info from csv file
-@app.route('/dashboard')
+@app.route('/dashboard', methods=["GET", "POST"])
 def dashboard():
     data = []
     with open('data.csv', 'r') as file:
@@ -155,6 +152,7 @@ def dashboard():
             data.append(row)
 
         return render_template('dashboard.html', data=data)
+
 
 # method to access data.csv using json
 
@@ -169,6 +167,7 @@ def get_data():
             data.append(row)
 
     return jsonify(data)
+
 
 #######################################################Start the server##############################################################
 # start the server with the 'run()' method
