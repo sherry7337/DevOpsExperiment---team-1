@@ -23,6 +23,13 @@ df.to_sql('population', connection, if_exists='replace')
 #Creating cursor for open db connection
 cursor = connection.cursor()
 
+df = pd.read_csv('GDPData.csv')
+df.columns = df.columns.str.strip()
+connection = sqlite3.connect('demo.db')
+df.to_sql('GDP', connection, if_exists='replace')
+cursor = connection.cursor()
+
+
 ## Database 
 sql_query = """SELECT * FROM population"""
 cursor.execute(sql_query)
@@ -173,52 +180,73 @@ def logout():
     return redirect(url_for("home"))
 
 
-#Route to display the data being displayed on the daahboard directly from the database
+
+# method to display info from csv file
+#@app.route('/dashboard', methods=["GET", "POST"])
+#def dashboard():
+#    data = []
+#    with open('data.csv', 'r') as file:
+#        csv_reader = csv.reader(file)
+#        for row in csv_reader:
+#            data.append(row)
+
+#        return render_template('dashboard.html', data=data)
+    
+# method to display info from database
 @app.route('/dashboard', methods=["GET", "POST"])
 def dashboard():
-    file = 'Downloaded_Data.csv'
-    #If statement checking for file variable with above value
-    #If the named file is found, it is deleted, otherwise print message saying not found
-    if(os.path.exists(file) and os.path.isfile(file)):
-        os.remove(file)
-        print(f"{file} deleted")
-    else:
-        print(f"{file} not found")
-    #print(df)
-    #Downloading the dataframe to a named csv file
-    df.to_csv('Downloaded_Data.csv')
+    #connection to DB
+    conn = sqlite3.connect('demo.db')
+    cursor = conn.cursor()
 
-    #Creating empty list
-    data = []
-    #Reading in the data.csv file and adding data to the data.csv list
-    with open('data.csv', 'r') as file:
-        csv_reader = csv.reader(file)
-        for row in csv_reader:
-            data.append(row)
+    # pull data from population table
+    cursor.execute("SELECT * FROM population")
+    population_column_names = [description[0] for description in cursor.description]
+    population_data = [dict(zip(population_column_names[1:], row[1:])) for row in cursor.fetchall()]
 
-        #Rendering dashboard template and sending list
-        return render_template('dashboard.html', data=data)
+     # Pull data from GDP table
+    cursor.execute("SELECT * FROM GDP")
+    gdp_column_names = [description[0] for description in cursor.description]
+    gdp_data = [dict(zip(gdp_column_names[1:], row[1:])) for row in cursor.fetchall()]
 
 
-# def downloadData():
-#     if request.method == 'POST':
-#         if 'downloadData' in request.form:
-#             print("Data Downloaded")
+    # close DB connection
+    conn.close()
 
+    #return render_template('dashboard.html', data=data)
+    return render_template('dashboard.html', data=population_data, gdp_data=gdp_data)
+
+@app.route('/data')
+def get_data():
+    # Connect to the SQLite database
+    conn = sqlite3.connect('demo.db')
+    cursor = conn.cursor()
+
+    # Execute a query to fetch data
+    cursor.execute("SELECT * FROM population")
+
+    # Fetch all data excluding index col
+    column_names = [description[0] for description in cursor.description]
+    data = [dict(zip(column_names[1:], row[1:])) for row in cursor.fetchall()]
+
+    # Close the connection
+    conn.close()
+
+    return jsonify(data)
 
 # method to access data.csv using json
 
 #data for graph is being pulled from data.csv
 #allows for the data to be used in a json format
-@app.route('/data')
-def get_data():
-    data = []
-    with open('data.csv', 'r') as file:
-        csv_reader = csv.DictReader(file)
-        for row in csv_reader:
-            data.append(row)
+# @app.route('/data')
+# def get_data():
+#     data = []
+#     with open('data.csv', 'r') as file:
+#         csv_reader = csv.DictReader(file)
+#         for row in csv_reader:
+#             data.append(row)
 
-    return jsonify(data)
+#     return jsonify(data)
 
 
 
