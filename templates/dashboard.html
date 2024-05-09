@@ -8,8 +8,10 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
+    {% if current_user.is_authenticated %}
     <!-- Dashboard content here -->
-
+    <a href="/logout">Logout</a>
+    <a href="/home">Home</a>
     <header class="bg-dark text-white py-4">
       <div class="container">
         <h1 class="text-center">Display Data From Database</h1>
@@ -52,7 +54,12 @@
                         {% endfor %}
                     </tbody>
                 </table>
+
             </div> -->
+
+            </div>
+            <button type="button" style="width:100%" class="btn btn-success" onclick="location.href='/dashboard';" name="downloadData" value="download">Download Dataset</button>
+
         </div>
       </div>
     </main>
@@ -155,6 +162,10 @@
         // Plot GDP bar chart
         Plotly.newPlot('gdp-chart-container', gdpTraces, layout);
     </script>
-
+    {% else %}
+    <h1>Please sign in to view the dashboard.</h1>
+    <li><a href="/login">Login</a></li>
+    <li><a href="/register">Create account</a></li>
+    {% endif %}
 </body>
 </html>

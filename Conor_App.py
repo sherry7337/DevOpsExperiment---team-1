@@ -12,11 +12,15 @@ app = Flask(__name__)
 
 ##################### Initiating the Database ########################
 ##Create Database from reading in the CSV file that we pulled from dataset one
-
+#Creating the Dataframe to hold csv data
 df = pd.read_csv('data.csv')
+#Return columns in dataframe with whitespacing removed
 df.columns = df.columns.str.strip()
+#Opening connection to the sqlite db - Creating a db if none exist called demo.db
 connection = sqlite3.connect('demo.db')
+#Creating a table to store the dataframe
 df.to_sql('population', connection, if_exists='replace')
+#Creating cursor for open db connection
 cursor = connection.cursor()
 
 df = pd.read_csv('GDPData.csv')
@@ -25,13 +29,22 @@ connection = sqlite3.connect('demo.db')
 df.to_sql('GDP', connection, if_exists='replace')
 cursor = connection.cursor()
 
+
 ## Database 
 sql_query = """SELECT * FROM population"""
 cursor.execute(sql_query)
+
+#Closing db
+connection.close()
+
+#Reopening connection to demo.db
+connection = sqlite3.connect('demo.db')
+cursor = connection.cursor()
+
 # Creating list from data in the DB
-dataTest = [cursor.fetchall()]
+#dataTest = [cursor.fetchall()]
 #Printing list DataTest
-print(dataTest)
+#print(dataTest)
 
 ##Attempting to ALTER the table to add a Meta Data column
 # sql_alter = """ALTER TABLE population ADD COLUMN Meta_data char(255)"""
@@ -47,21 +60,41 @@ login_manager.init_app(app)
 
 
 # Create User model for test.db Database
-#class Users(UserMixin, db.Model):
- #   id = db.Column(db.Integer, primary_key=True)
-  #  userName = db.Column(db.String(40), unique=True, nullable=False)
-    #WFirstName = db.Column(db.String(20), nullable=False)
-    #WLastName = db.Column(db.String(20), nullable=False)
-    #WEmail = db.Column(db.String(20), unique=True, nullable=False)
-   # password = db.Column(db.String(60), nullable=False)
+# class Users(UserMixin, db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     userName = db.Column(db.String(40), unique=True, nullable=False)
+# #     #WFirstName = db.Column(db.String(20), nullable=False)
+# #     #WLastName = db.Column(db.String(20), nullable=False)
+# #     #WEmail = db.Column(db.String(20), unique=True, nullable=False)
+#     password = db.Column(db.String(60), nullable=False)
     
-   # def __repr__(self):
-    #    return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
+#     def __repr__(self):
+#         return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
+ 
+# db.init_app(app) Tells flask-sqlalchemy what database to connect to
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
+# Enter a secret key
+app.config["SECRET_KEY"] = "ENTER YOUR SECRET KEY"
+db = SQLAlchemy()
+ 
+# LoginManager is needed for our application to be able to log in and out users
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# Create database within app context
+class Users(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(250), unique=True,
+                         nullable=False)
+    password = db.Column(db.String(250),
+                         nullable=False)
+ 
  
 # Initialize app with extension
-#db.init_app(app)
-# Create database within app context
-
+db.init_app(app)
+#Must create database within app context 
+with app.app_context():
+    db.create_all()
  
 # Creates a user loader callback that returns the user object given an id
 @login_manager.user_loader
@@ -70,21 +103,21 @@ def loader_user(user_id):
 
 #####################################################Decorators and Routes###############################################################
 @app.route("/API/Login", methods=["GET", "POST"])
-def api_login(WUserName, WPassword):
-   usernameargs = request.args.get(WUserName)
-   passwordargs = request.args.get(WPassword)
-   print(usernameargs)
-   print(passwordargs)
-
-   dbpassword = dbquery("SELECT Password, FROM Users where username="+usernameargs+";")
-   if passwordargs == dbpassword: 
-       response = make_response({"data":dbpassword}, 200)
-       print("good job")
-       return response
-   else:
-       response = make_response({"data":"no"}, 400)
-       print("go away")
-       return response
+def api_login():
+    #wrap in a try/except to display non form data api usage
+    try:
+        #Using the DB username and passwords we can confirm successful logins.
+        user = Users.query.filter_by(username=request.form.get("username")).first()
+        if user.password == request.form.get("password"):
+            response = make_response({"response":"login successful"}, 200)
+            return response
+        else:
+            #Failed login if username and password is wrong or doesnt exist.
+            response = make_response({"response":"login failed"}, 401)
+            return response
+    except:
+        response = make_response({"response":"Bad request"}, 400)
+        return response
 
 @app.route("/API/Bulk")
 def api_bulk():
@@ -104,7 +137,7 @@ def home():
     # Render home.html on "/home" route
     return render_template("home.html")
 
-    #a second route to home without the need for a URL extension
+#A second route to home without the need for a URL extension
 @app.route("/", methods=["GET", "POST"])
 def home2():
     # Render home.html on "/" route
@@ -120,8 +153,8 @@ def login():
         if user.password == request.form.get("password"):
             # Use the login_user method to log in the user
             login_user(user)
-            return redirect(url_for("/API/Login"))
-        # Redirect the user back to the home or "/"
+            # Redirect the user back to the dashboard
+            return redirect(url_for("dashboard"))
     return render_template("login.html")
 
 @app.route('/register', methods=["GET", "POST"])
@@ -131,12 +164,12 @@ def register():
         #takes the username and password entered by the users.
         user = Users(username=request.form.get("username"),
                      password=request.form.get("password"))
-        # Add the user to the DB
+        # Adds the user to the DB
         db.session.add(user)
         # Commit the changes made to the DB
         db.session.commit()
         # Once user account is created, redirect them to the login page.
-        return redirect(url_for("/home"))
+        return redirect(url_for("login"))
     # Renders sign_up template if user made a GET request
     return render_template("sign_up.html")
 
@@ -145,6 +178,7 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for("home"))
+
 
 
 # method to display info from csv file
@@ -174,6 +208,7 @@ def dashboard():
     cursor.execute("SELECT * FROM GDP")
     gdp_column_names = [description[0] for description in cursor.description]
     gdp_data = [dict(zip(gdp_column_names[1:], row[1:])) for row in cursor.fetchall()]
+
 
     # close DB connection
     conn.close()
@@ -212,6 +247,7 @@ def get_data():
 #             data.append(row)
 
 #     return jsonify(data)
+
 
 
 #######################################################Start the server##############################################################
