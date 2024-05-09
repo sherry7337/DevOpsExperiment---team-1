@@ -12,21 +12,32 @@ app = Flask(__name__)
 
 ##################### Initiating the Database ########################
 ##Create Database from reading in the CSV file that we pulled from dataset one
-
+#Creating the Dataframe to hold csv data
 df = pd.read_csv('data.csv')
+#Return columns in dataframe with whitespacing removed
 df.columns = df.columns.str.strip()
+#Opening connection to the sqlite db - Creating a db if none exist called demo.db
 connection = sqlite3.connect('demo.db')
+#Creating a table to store the dataframe
 df.to_sql('population', connection, if_exists='replace')
+#Creating cursor for open db connection
 cursor = connection.cursor()
-
 
 ## Database 
 sql_query = """SELECT * FROM population"""
 cursor.execute(sql_query)
+
+#Closing db
+connection.close()
+
+#Reopening connection to demo.db
+connection = sqlite3.connect('demo.db')
+cursor = connection.cursor()
+
 # Creating list from data in the DB
-dataTest = [cursor.fetchall()]
+#dataTest = [cursor.fetchall()]
 #Printing list DataTest
-print(dataTest)
+#print(dataTest)
 
 ##Attempting to ALTER the table to add a Meta Data column
 # sql_alter = """ALTER TABLE population ADD COLUMN Meta_data char(255)"""
@@ -42,19 +53,19 @@ login_manager.init_app(app)
 
 
 # Create User model for test.db Database
-class Users(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    userName = db.Column(db.String(40), unique=True, nullable=False)
-    #WFirstName = db.Column(db.String(20), nullable=False)
-    #WLastName = db.Column(db.String(20), nullable=False)
-    #WEmail = db.Column(db.String(20), unique=True, nullable=False)
-    password = db.Column(db.String(60), nullable=False)
+# class Users(UserMixin, db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     userName = db.Column(db.String(40), unique=True, nullable=False)
+#     #WFirstName = db.Column(db.String(20), nullable=False)
+#     #WLastName = db.Column(db.String(20), nullable=False)
+#     #WEmail = db.Column(db.String(20), unique=True, nullable=False)
+#     password = db.Column(db.String(60), nullable=False)
     
-    def __repr__(self):
-        return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
+#     def __repr__(self):
+#         return f"User('{self.WFirstName}', '{self.WLastName}', '{self.WEmail}')"
  
 # Initialize app with extension
-db.init_app(app)
+# db.init_app(app)
 # Create database within app context
 
  
@@ -142,16 +153,40 @@ def logout():
     return redirect(url_for("home"))
 
 
-# method to display info from csv file
+#Route to display the data being displayed on the daahboard directly from the database
 @app.route('/dashboard', methods=["GET", "POST"])
 def dashboard():
+
+    file = 'Downloaded_Data.csv'
+
+    #If statement checking for file variable with above value
+    #   if the named file is found it is deleted otherwise print message saying not found
+    if(os.path.exists(file) and os.path.isfile(file)):
+        os.remove(file)
+        print(f"{file} deleted")
+    else:
+        print(f"{file} not found")
+
+    #print(df)
+    #Downloading the dataframe to a named csv file
+    df.to_csv('Downloaded_Data.csv')
+
+    #Creating empty list
     data = []
+    #Reading in the data.csv file and adding data to the data.csv list
     with open('data.csv', 'r') as file:
         csv_reader = csv.reader(file)
         for row in csv_reader:
             data.append(row)
 
+        #Rendering dashboard template and sending list
         return render_template('dashboard.html', data=data)
+
+
+# def downloadData():
+#     if request.method == 'POST':
+#         if 'downloadData' in request.form:
+#             print("Data Downloaded")
 
 
 # method to access data.csv using json
@@ -167,6 +202,7 @@ def get_data():
             data.append(row)
 
     return jsonify(data)
+
 
 
 #######################################################Start the server##############################################################
