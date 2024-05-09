@@ -3,3 +3,6 @@ Session 1 end 21:32 29/04/2024
 
 Session 2 start 19:22 29/04/2024
 Session 2 end 21:25 29/04/2024
+
+Session 3 start 14:50 09/05/2024
+Session 3 end 16:39 09/05/2024

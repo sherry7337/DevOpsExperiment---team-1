@@ -5,6 +5,7 @@
     <!-- Bootstrap CSS-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="static/bootstrap.min.css" rel="stylesheet" media="screen">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <!-- Dashboard content here -->
@@ -17,6 +18,9 @@
 
     <main class="py-4">
         <div class="container">
+            <div id="graph-container">
+                <!-- Line graph displayed here from script below-->
+            </div>
             <div id="data-table-container" class="bg-light p-4 rounded shadow">
                 <h1>Data Table</h1>
                 <!-- Table pulls data from 'data.csv' and dumps into table -->
@@ -52,5 +56,45 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $.getJSON('/data', function(data) {
+                // Extract x and y data from JSON
+                var countries = Object.keys(data[0]); // Extract country names from the first row
+                var years = data.map(row => row['TIME']); // Extract years
+                years.shift(); // Remove 'TIME' from years
+
+                var traces = [];
+
+                // Iterate through each country and create traces for the graph
+                countries.forEach(function(country) {
+                    if (country !== 'TIME') { // Skip 'TIME' column
+                        var yData = data.map(row => row[country]); // Extract data for the current country
+                        yData.shift(); // Remove country name from yData
+                        var trace = {
+                            x: years,
+                            y: yData,
+                            mode: 'lines',
+                            name: country
+                        };
+                        traces.push(trace);
+                    }
+                });
+
+                // Layout for the line graph
+                var layout = {
+                    title: 'Line Graph',
+                    xaxis: {title: 'Countries'},
+                    yaxis: {title: 'Values'}
+                };
+
+                // Render the line graph using Plotly
+                Plotly.newPlot('graph-container', traces, layout);
+            });
+        });
+    </script>
+
 </body>
 </html>
